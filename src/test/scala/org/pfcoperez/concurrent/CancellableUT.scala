@@ -1,11 +1,15 @@
-package org.pfperez.concurrent
+package org.pfcoperez.concurrent
 
+import java.util.concurrent.CancellationException
+
+import com.stratio.common.utils.concurrent.Cancellable
+import org.scalatest.concurrent.Timeouts._
 import org.scalatest.{Matchers, FlatSpec}
 
-import org.pfcoperez.concurrent.Cancellable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.util.Failure
 
 object CancellableUT {
   def measureTime(todo: => Unit): Duration = {
@@ -21,7 +25,7 @@ class CancellableUT extends FlatSpec with Matchers {
 
   "A cancellable task" should "provide a future interface" in {
 
-    val ct = Cancellable[Int](global) {
+    val ct = Cancellable[Int] {
       Thread.sleep(1000)
       42
     }
@@ -32,15 +36,17 @@ class CancellableUT extends FlatSpec with Matchers {
 
   it should "be able to cancel the running task" in {
 
-    val tsleep = 1 second
-
-    val ct = Cancellable[Int](global) {
-      Thread.sleep(1000)
-      42
+    val ct = Cancellable[Int] {
+      Thread.sleep(tsleep.toMillis)
+      expectedRes
     }
 
-    ct.cancel()
-    measureTime(Await.ready(ct.fut, tsleep*2)).toMillis should be < tsleep.toMillis
+    failAfter(tsleep) {
+      ct.cancel()
+      Await.ready(ct.fut, tsleep*2).value should matchPattern {
+        case Some(Failure(_: CancellationException)) =>
+      }
+    }
 
   }
 

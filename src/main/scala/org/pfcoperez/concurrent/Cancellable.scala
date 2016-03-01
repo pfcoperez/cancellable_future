@@ -5,7 +5,7 @@ import java.util.concurrent.{Callable, FutureTask}
 import scala.concurrent.{ExecutionContext, Future}
 
 object Cancellable {
-  def apply[T](executionContext: ExecutionContext)(todo: => T): Cancellable[T] =
+  def apply[T](todo: => T)(implicit executionContext: ExecutionContext): Cancellable[T] =
     new Cancellable[T](executionContext, todo)
 }
 
